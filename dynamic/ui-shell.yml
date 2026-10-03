@@ -1,0 +1,10 @@
+http:
+  routers:
+    ui-shell:
+      rule: Host(`${DOMAIN}`)
+      service: ui-shell
+  services:
+    ui-shell:
+      loadBalancer:
+        servers:
+          - url: http://192.168.1.12:8082

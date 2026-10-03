@@ -1,0 +1,41 @@
+name: Deploy
+
+env:
+  TARGET_IP: 192.168.1.12
+  APP_NAME: ${{ github.event.repository.name }}
+  IMAGE: traefik:v3.5
+  ACME_EMAIL: ${{ secrets.ACME_EMAIL }}
+  DOMAIN: ${{ secrets.DOMAIN }}
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: [self-hosted]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pull image on runner
+        run: docker pull ${{ env.IMAGE }}
+
+      - name: Deploy to target Pi
+        env:
+          APP_DIR: /home/runner/apps/${{ env.APP_NAME }}
+          SSH: ssh -o StrictHostKeyChecking=accept-new -i /home/runner/.ssh/deploy_key runner@${{ env.TARGET_IP }}
+        run: |
+          docker save "$IMAGE" | $SSH docker load
+          $SSH "mkdir -p '$APP_DIR/dynamic' '$APP_DIR/letsencrypt' '$APP_DIR/logs' && rm -f '$APP_DIR/dynamic'/*"
+          for f in dynamic/*.yml; do
+            sed -i -e "s|\${DOMAIN}|$DOMAIN|g" "$f"
+          done
+          tar -cf - -C dynamic . | $SSH "tar -xf - -C '$APP_DIR/dynamic'"
+          $SSH "cat > '$APP_DIR/docker-compose.yml'" < docker-compose.yml
+          sed -e "s|__APP_DIR__|$APP_DIR|g" -e "s|__APP_NAME__|$APP_NAME|g" deploy/logrotate.conf | $SSH "cat > '$APP_DIR/logrotate.conf'"
+          $SSH "( crontab -l 2>/dev/null | grep -vF '$APP_DIR/logrotate.conf'; echo '17 3 * * * PATH=/usr/sbin:/usr/bin:/bin logrotate --state $APP_DIR/logrotate.state $APP_DIR/logrotate.conf' ) | crontab -"
+          $SSH "cd '$APP_DIR' && IMAGE='$IMAGE' APP_NAME='$APP_NAME' ACME_EMAIL='${{ env.ACME_EMAIL }}' docker compose up -d"

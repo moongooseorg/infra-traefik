@@ -1,0 +1,17 @@
+http:
+  routers:
+    template:
+      rule: Host(`${DOMAIN}`) && PathPrefix(`/apps/template`)
+      service: template
+      middlewares:
+        - template-stripprefix
+  middlewares:
+    template-stripprefix:
+      stripPrefix:
+        prefixes:
+          - /apps/template
+  services:
+    template:
+      loadBalancer:
+        servers:
+          - url: http://192.168.1.12:8081

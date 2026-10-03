@@ -1,0 +1,17 @@
+http:
+  routers:
+    mp3-tagger:
+      rule: Host(`${DOMAIN}`) && PathPrefix(`/apps/mp3-tagger`)
+      service: mp3-tagger
+      middlewares:
+        - mp3-tagger-stripprefix
+  middlewares:
+    mp3-tagger-stripprefix:
+      stripPrefix:
+        prefixes:
+          - /apps/mp3-tagger
+  services:
+    mp3-tagger:
+      loadBalancer:
+        servers:
+          - url: http://192.168.1.12:8084

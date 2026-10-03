@@ -1,0 +1,17 @@
+http:
+  routers:
+    markets:
+      rule: Host(`${DOMAIN}`) && PathPrefix(`/apps/markets`)
+      service: markets
+      middlewares:
+        - markets-stripprefix
+  middlewares:
+    markets-stripprefix:
+      stripPrefix:
+        prefixes:
+          - /apps/markets
+  services:
+    markets:
+      loadBalancer:
+        servers:
+          - url: http://192.168.1.12:8083

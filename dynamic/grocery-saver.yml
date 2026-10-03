@@ -1,0 +1,17 @@
+http:
+  routers:
+    grocery-saver:
+      rule: Host(`${DOMAIN}`) && PathPrefix(`/apps/grocery-saver`)
+      service: grocery-saver
+      middlewares:
+        - grocery-saver-stripprefix
+  middlewares:
+    grocery-saver-stripprefix:
+      stripPrefix:
+        prefixes:
+          - /apps/grocery-saver
+  services:
+    grocery-saver:
+      loadBalancer:
+        servers:
+          - url: http://192.168.1.12:8086

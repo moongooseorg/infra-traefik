@@ -1,0 +1,17 @@
+http:
+  routers:
+    steganography:
+      rule: Host(`${DOMAIN}`) && PathPrefix(`/apps/steganography`)
+      service: steganography
+      middlewares:
+        - steganography-stripprefix
+  middlewares:
+    steganography-stripprefix:
+      stripPrefix:
+        prefixes:
+          - /apps/steganography
+  services:
+    steganography:
+      loadBalancer:
+        servers:
+          - url: http://192.168.1.12:8085

@@ -1,0 +1,28 @@
+services:
+  traefik:
+    container_name: ${APP_NAME:?APP_NAME must be set}
+    image: ${IMAGE:?IMAGE must be set}
+    restart: always
+    pull_policy: missing
+    ports:
+      - "30080:80"
+      - "30443:443"
+      - "8080:8080"
+    command:
+      - --providers.file.directory=/dynamic
+      - --providers.file.watch=true
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.websecure.http.tls.certresolver=le
+      - --certificatesresolvers.le.acme.email=${ACME_EMAIL:?ACME_EMAIL must be set}
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
+      - --api.insecure=true
+      - --accesslog=true
+      - --accesslog.filepath=/var/log/traefik/access.log
+    volumes:
+      - ./dynamic:/dynamic:ro
+      - ./letsencrypt:/letsencrypt
+      - ./logs:/var/log/traefik
